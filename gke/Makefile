@@ -8,8 +8,8 @@ CLUSTER_ZONE			?= "us-east4-a"
 CLUSTER_NETWORK			?= "ldelossa-net"
 CLUSTER_SUBNET			?= "ldelossa-net"
 CLUSTER_PROJECT			?= "cilium-dev"
-CLUSTER_NODES   		?= "3"
-CLUSTER_MACHINE_TYPE 	?= ""
+CLUSTER_NODES   		?= "2"
+CLUSTER_MACHINE_TYPE 	?= "c2-standard-4"
 
 # GKE specific HELM directive
 NATIVE_CIDR ?= $(shell $(GCLOUD_CLI) container clusters describe $(CLUSTER_NAME) --zone $(CLUSTER_ZONE) --format "value(clusterIpv4Cidr)" 2> /dev/null)
@@ -79,6 +79,7 @@ else
 		--install 
   else
 	$(HELM_CLI) upgrade cilium cilium/cilium --version $(CILIUM_VER) \
+		--namespace kube-system \
 		--set nodeinit.enabled=true \
 		--set nodeinit.reconfigureKubelet=true \
 		--set nodeinit.removeCbrBridge=true \

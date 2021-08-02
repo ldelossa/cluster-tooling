@@ -18,6 +18,7 @@ and utilize the current context of the kubectl tool.
 
 Cloud Provider Help Targets:
 	gke-help                   - display GKE specific targets and variables
+	kind-help                  - display Kind specific targets and variables
 
 Global Targets:
 	hubble-install-helm        - deploy hubble via helm to the currently configured k8s context. (helm install of cilium is required.) 
@@ -47,4 +48,6 @@ endif
 
 # include gke specific targets
 include ./gke/Makefile
+# include kind specific targets
+include ./kind/Makefile
 

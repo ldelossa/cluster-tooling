@@ -3,11 +3,11 @@ KIND_CLI = $(shell which kind 2> /dev/null)
 
 # GKE CLUSTER INFO
 CLUSTER_NAME			?= "ldelossa-dev"
-CLUSTER_CONFIG          ?= "./kind/config.yaml"
+CLUSTER_CONFIG          ?= "./kind/cluster_config.yaml"
 
-.PHONY: kind-help kind-cluster-up kind-cluster-down 
+.PHONY: kind-help kind-cluster-up kind-cluster-down frr-up
 
-define KIND_HEL 
+define KIND_HELP
 King Targets:
 	kind-cluster-up           - Deploy a kind cluster and local registry on your local machine
 	kind-cluster-down         - Destroy a kind cluster and local registry on your local machine
@@ -45,8 +45,15 @@ ifeq (, $(KIND_CLI))
 	@echo "kind cli not available"	
 else
 	$(KIND_CLI) delete cluster --name $(CLUSTER_NAME)
-	@docker kill "kind-registry"
+	@-docker kill "kind-registry"
 endif
 
 frr-up:
-	docker run -d --privileged --network kind --rm --name frr --volume $(pwd)/dev-env/bgp/frr-volume:/etc/frr frrouting/frr:latest
+	docker run -d --privileged --network kind --name frr \
+		--ip="172.18.0.50" \
+		--volume $(shell pwd)/kind/frr:/etc/frr:z \
+		frrouting/frr:v7.5.1
+
+frr-down:
+	docker kill frr
+	docker rm frr

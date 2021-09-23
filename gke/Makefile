@@ -43,14 +43,18 @@ gke-cluster-up:
 ifeq (, $(GCLOUD_CLI))
 	@echo "gcloud cli not available"	
 else
-	$(GCLOUD_CLI) container clusters create "ldelossa-dev" \
+	$(GCLOUD_CLI) container clusters create $(CLUSTER_NAME) \
 		--cluster-version $(CLUSTER_VER) \
 		--node-taints node.cilium.io/agent-not-ready=true:NoSchedule \
 		--zone $(CLUSTER_ZONE) \
 		--network $(CLUSTER_NETWORK) \
 		--subnetwork $(CLUSTER_SUBNET) \
 		--num-nodes $(CLUSTER_NODES) \
-		--machine-type $(CLUSTER_MACHINE_TYPE)
+		--machine-type $(CLUSTER_MACHINE_TYPE) \
+		--disk-size 100GB \
+		--preemptible \
+		--image-type COS_CONTAINERD \
+		--release-channel rapid
 	@$(GCLOUD_CLI) container clusters get-credentials $(CLUSTER_NAME) --zone $(CLUSTER_ZONE) --project $(CLUSTER_PROJECT)
 endif
 

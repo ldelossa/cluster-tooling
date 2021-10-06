@@ -18,6 +18,7 @@ and utilize the current context of the kubectl tool.
 
 Cloud Provider Help Targets:
 	gke-help                   - display GKE specific targets and variables
+	eks-help                   - display EKS specific targets and variables
 	kind-help                  - display Kind specific targets and variables
 
 Global Targets:
@@ -48,6 +49,8 @@ endif
 
 # include gke specific targets
 include ./gke/Makefile
+# include eks specific targets
+include ./eks/Makefile
 # include kind specific targets
 include ./kind/Makefile
 

@@ -10,6 +10,7 @@ CLUSTER_SUBNET			?= "ldelossa-net"
 CLUSTER_PROJECT			?= "cilium-dev"
 CLUSTER_NODES   		?= "2"
 CLUSTER_MACHINE_TYPE 	?= "c2-standard-4"
+CLUSTER_IMAGE_TYPE      ?= "COS_CONTAINERD"
 
 # GKE specific HELM directive
 NATIVE_CIDR ?= $(shell $(GCLOUD_CLI) container clusters describe $(CLUSTER_NAME) --zone $(CLUSTER_ZONE) --format "value(clusterIpv4Cidr)" 2> /dev/null)
@@ -31,6 +32,7 @@ GKE Target Variables:
 	CLUSTER_PROJECT           - GCP project to deploy k8s cluster in.
 	CLUSTER_NODES			  - Number of k8s nodes to deploy.
 	CLUSTER_MACHINE_TYPE      - GCP machine type of nodes.
+	CLUSTER_IMAGE_TYPE		  - GCP image type.
 	HELM_VALUES				  - Path to helm values to use instead of defaults. (nativeRoutingCIDR is still dynamically set)
 endef
 
@@ -53,7 +55,7 @@ else
 		--machine-type $(CLUSTER_MACHINE_TYPE) \
 		--disk-size 100GB \
 		--preemptible \
-		--image-type COS_CONTAINERD \
+		--image-type $(CLUSTER_IMAGE_TYPE) \
 		--release-channel rapid
 	@$(GCLOUD_CLI) container clusters get-credentials $(CLUSTER_NAME) --zone $(CLUSTER_ZONE) --project $(CLUSTER_PROJECT)
 endif

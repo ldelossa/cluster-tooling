@@ -6,7 +6,5 @@ containerdConfigPatches:
     endpoint = ["http://kind-registry:5000"]
 nodes:
 - role: control-plane
-- role: worker
-- role: worker
 networking:
   disableDefaultCNI: true

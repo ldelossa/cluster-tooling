@@ -1,6 +1,10 @@
 # CLI DEPENDENCIES
 GCLOUD_CLI = $(shell which gcloud 2> /dev/null)
 
+define dependency_check
+	$(if $(GCLOUD_CLI),,$(error gcloud cli is required to run this target))
+endef
+
 # GKE CLUSTER INFO
 CLUSTER_VER				?= "" # will use gke default if not specified.
 CLUSTER_NAME			?= "ldelossa-dev"
@@ -36,15 +40,17 @@ GKE Target Variables:
 	HELM_VALUES				  - Path to helm values to use instead of defaults. (nativeRoutingCIDR is still dynamically set)
 endef
 
+define depedency_check
+	
+endef 
+
 export GKE_HELP
 gke-help:
 	@echo "$$GKE_HELP"
 
 # create a gke cluster
 gke-cluster-up:
-ifeq (, $(GCLOUD_CLI))
-	@echo "gcloud cli not available"	
-else
+	$(depdendency_check)
 	$(GCLOUD_CLI) container clusters create $(CLUSTER_NAME) \
 		--cluster-version $(CLUSTER_VER) \
 		--node-taints node.cilium.io/agent-not-ready=true:NoSchedule \
@@ -58,41 +64,8 @@ else
 		--image-type $(CLUSTER_IMAGE_TYPE) \
 		--release-channel rapid
 	@$(GCLOUD_CLI) container clusters get-credentials $(CLUSTER_NAME) --zone $(CLUSTER_ZONE) --project $(CLUSTER_PROJECT)
-endif
 
 # teardown a gke cluster
 gke-cluster-down:
-ifeq (, $(GCLOUD_CLI))
-	@echo "gcloud cli not available"	
-else
+	$(depdendency_check)
 	@$(GCLOUD_CLI) container clusters delete $(CLUSTER_NAME) --zone $(CLUSTER_ZONE)
-endif
-
-# install or upgrade cilium oss via helm
-gke-cilium-upgrade-helm:
-ifeq (, $(HELM_CLI))
-	@echo "helm cli not available"	
-else ifeq (, $(GCLOUD_CLI))
-	@echo "helm cli not available"	
-else
-  ifeq (,$(NATIVE_CIDR))
-	@echo "could not determine native cidr of cluster"
-  else ifneq (, $(HELM_VALUES))
-	$(HELM_CLI) upgrade cilium cilium/cilium --version $(CILIUM_VER) \
-		--values $(HELM_VALUES) \
-		--namespace kube-system \
-		--set nativeRoutingCIDR=$(NATIVE_CIDR) \
-		--install 
-  else
-	$(HELM_CLI) upgrade cilium cilium/cilium --version $(CILIUM_VER) \
-		--namespace kube-system \
-		--set nodeinit.enabled=true \
-		--set nodeinit.reconfigureKubelet=true \
-		--set nodeinit.removeCbrBridge=true \
-		--set cni.binPath=/home/kubernetes/bin \
-		--set gke.enabled=true \
-		--set ipam.mode=kubernetes \
-		--set nativeRoutingCIDR=$(NATIVE_CIDR) \
-		--install 
-  endif
-endif

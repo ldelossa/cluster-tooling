@@ -1,9 +1,12 @@
 # CLI DEPEDENCIES
-HELM_CLI   = $(shell which helm   2> /dev/null)
-CILIUM_CLI = $(shell which cilium 2> /dev/null)
+HELM_CLI = $(shell which helm 2> /dev/null)
 
 # CILIUM CLUSTER INFO
 CILIUM_VER ?= "1.10.3"
+
+define dependency_check
+$(if $(HELM_CLI),,$(error helm cli is required to run this target))
+endef
 
 define HELP
 This makefile will create k8s clusters in various cloud
@@ -37,15 +40,12 @@ help:
 # install hubble to the currently configured kubectl
 # context.
 hubble-install-helm:
-ifeq (, $(HELM_CLI))
-	@echo "helm cli not available"	
-else
+	$(dependency_check)
 	$(HELM_CLI) upgrade cilium cilium/cilium --version $(CILIUM_VER) \
-   --namespace kube-system \
-   --reuse-values \
-   --set hubble.relay.enabled=true \
-   --set hubble.ui.enabled=true
-endif
+	-namespace kube-system \
+	-reuse-values \
+	-set hubble.relay.enabled=true \
+	-set hubble.ui.enabled=true
 
 # include gke specific targets
 include ./gke/Makefile

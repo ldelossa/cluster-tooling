@@ -1,11 +1,19 @@
 # CLI DEPENDENCIES
-KIND_CLI = $(shell which kind 2> /dev/null)
+KIND_CLI 	= $(shell which kind 2> /dev/null)
+KUBECTL_CLI = $(shell which kubectl 2> /dev/null)
+DOCKER_CLI  = $(shell which docker 2> /dev/null)
+
+define dependency_check
+	$(if $(KIND_CLI),,$(error kind cli is required to run this target))
+	$(if $(KUBECTL_CLI),,$(error kubectl cli is required to run this target))
+	$(if $(DOCKER_CLI),,$(error docker cli is required to run this target))
+endef
 
 # GKE CLUSTER INFO
 CLUSTER_NAME			?= "ldelossa-dev"
 CLUSTER_CONFIG          ?= "./kind/cluster_config.yaml"
 
-.PHONY: kind-help kind-cluster-up kind-cluster-down frr-up
+.PHONY: kind-help kind-cluster-up kind-cluster-down frr-up frr-down cilium-bgp-install cilium-bgp-uninstall
 
 define KIND_HELP
 King Targets:
@@ -29,31 +37,68 @@ kind-help:
 	@echo "$$KIND_HELP"
 
 kind-cluster-up:
-ifeq (, $(KIND_CLI))
-	@echo "kind cli not available"	
-else
+	$(depdendency_check)
 	@echo "creating local registry...."
 	@./kind/local_registry.sh
 	echo "creating cluster"
 	$(KIND_CLI) create cluster  --name $(CLUSTER_NAME) --config $(CLUSTER_CONFIG) 
 	@docker network connect "kind" 'kind-registry' || true
 	@kubectl apply -f ./kind/local_registry_configmap.yaml
-endif
 
 kind-cluster-down:
-ifeq (, $(KIND_CLI))
+	$(depdendency_check)
 	@echo "kind cli not available"	
-else
 	$(KIND_CLI) delete cluster --name $(CLUSTER_NAME)
 	@-docker kill "kind-registry"
-endif
+
+cilium-bgp-install:
+	$(depdendency_check)
+	kubectl apply -f ./kind/bgp/bgp_configmap.yaml
+	cilium install \
+	--agent-image "quay.io/cilium/cilium-ci" \
+	--version "latest" \
+	--operator-image "quay.io/cilium/operator-generic-ci" \
+	--config="bgp-announce-lb-ip=true" \
+	--config="bgp-announce-pod-cidr=true" \
+	--config="debug=true" \
+	--ipam kubernetes
+
+cilium-bgp-uninstall:
+	cilium uninstall
 
 frr-up:
+	$(depdendency_check)
 	docker run -d --privileged --network kind --name frr \
 		--ip="172.18.0.50" \
-		--volume $(shell pwd)/kind/frr:/etc/frr:z \
-		frrouting/frr:v7.5.1
+		--volume $(shell pwd)/kind/bgp/frr:/etc/frr:z \
+		frrouting/frr:v8.0.1
 
 frr-down:
+	$(depdendency_check)
 	docker kill frr
 	docker rm frr
+
+frr-shell:
+	docker exec -it frr vtysh
+
+bird-up:
+	$(depdendency_check)
+	docker run -d --privileged --network kind --name bird \
+		--ip="172.18.0.50" \
+		--volume $(shell pwd)/kind/bgp/bird:/etc/bird:z \
+		pierky/bird	
+
+bird-up-logs:
+	$(depdendency_check)
+	make bird-down
+	docker run -d --privileged --network kind --name bird \
+		--ip="172.18.0.50" \
+		--volume $(shell pwd)/kind/bgp/bird:/etc/bird:z \
+		pierky/bird	
+	docker logs -f bird
+
+bird-down:
+	$(depdendency_check)
+	-docker kill bird
+	-docker rm bird
+

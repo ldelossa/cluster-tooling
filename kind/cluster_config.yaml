@@ -4,7 +4,9 @@ containerdConfigPatches:
 - |-
   [plugins."io.containerd.grpc.v1.cri".registry.mirrors."localhost:5000"]
     endpoint = ["http://kind-registry:5000"]
-nodes:
-- role: control-plane
+nodes: 
+  - role: control-plane
+  - role: worker
 networking:
   disableDefaultCNI: true
+  ipFamily: ipv6

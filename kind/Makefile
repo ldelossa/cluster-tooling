@@ -69,7 +69,7 @@ cilium-bgp-uninstall:
 frr-up:
 	$(depdendency_check)
 	docker run -d --privileged --network kind --name frr \
-		--ip="172.18.0.50" \
+		--ip6="fc00:f853:ccd:e793::50" \
 		--volume $(shell pwd)/kind/bgp/frr:/etc/frr:z \
 		frrouting/frr:v8.0.1
 
